@@ -1,0 +1,4 @@
+
+The files by_model and ssy_model will contain the classes, with all parameters
+-- including those related to dividends --- and the key functions such as
+those that implement iterative computation of both utility and asset prices.
