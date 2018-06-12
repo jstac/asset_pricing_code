@@ -64,7 +64,7 @@ class SSY:
                  h_z_grid_size=8,
                  h_c_grid_size=8,
                  h_d_grid_size=8,
-                 mc_draw_size=2500,
+                 mc_draw_size=4000,
                  build_grids=True):
 
 
@@ -98,6 +98,17 @@ class SSY:
                self.σ_hz, self.ρ_hc, self.σ_hc,  \
                self.μ_d, self.α, self.δ, \
                self.ϕ_d, self.ρ_hd, self.σ_hd 
+
+    def utility_params_differ(self, other):
+        p1 = self.β, self.γ, self.ψ, \
+                 self.μ_c, self.ρ, self.ϕ_z, \
+                 self.σ_bar, self.ϕ_c, self.ρ_hz, \
+                 self.σ_hz, self.ρ_hc, self.σ_hc
+        p2 = other.β, other.γ, other.ψ, \
+                 other.μ_c, other.ρ, other.ϕ_z, \
+                 other.σ_bar, other.ϕ_c, other.ρ_hz, \
+                 other.σ_hz, other.ρ_hc, other.σ_hc
+        return not np.allclose(p1, p2)
 
     def simulate_paths(self, n=1_000_000, seed=1234):
         """
@@ -257,7 +268,7 @@ class SSY:
                               h_c_0=0.0,
                               h_d_0=0.0,
                               n=1000, 
-                              num_reps=10_000,
+                              num_reps=12_000,
                               use_parallel_flag=True):
                          
         # Unpack params and related objects

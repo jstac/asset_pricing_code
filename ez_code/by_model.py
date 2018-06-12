@@ -72,6 +72,15 @@ class BY:
                  self.μ_d, self.α, self.ϕ_d 
         return params
 
+    def utility_params_differ(self, other):
+
+        p1 = self.β, self.γ, self.ψ, \
+                 self.μ_c, self.ρ, self.ϕ_z, \
+                 self.v, self.d, self.ϕ_σ
+        p1 = other.β, other.γ, other.ψ, \
+                 other.μ_c, other.ρ, other.ϕ_z, \
+                 other.v, other.d, other.ϕ_σ
+        return not np.allclose(p1, p2)
 
     def build_grid_and_shocks(self, ts_length=100_000, seed=1234):
 

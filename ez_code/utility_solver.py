@@ -1,6 +1,9 @@
 import numpy as np
 
-def compute_recursive_utility(model, tol=0.001, max_iter=20000, verbose=True):
+def compute_recursive_utility(model, 
+                              tol=0.001, 
+                              max_iter=50000, 
+                              verbose=True):
     """
     Solves for the fixed point of T given an instance model of BY or SSY.
 

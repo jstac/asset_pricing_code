@@ -12,6 +12,7 @@ def stability_plot(ModelClass,
                    p2_max,        # min value for param2
                    xlabel=None,
                    ylabel=None,
+                   w_star_guess=None,
                    coords=(-225, 30),     # relative location of text
                    G=3,
                    one_step=False):                  # grid size for x and y axes
@@ -25,9 +26,14 @@ def stability_plot(ModelClass,
 
     # Get default parameter vals for param1 and param2
     md = ModelClass()
-
     param1_value = md.__getattribute__(param1)
     param2_value = md.__getattribute__(param2)
+
+    # Compute utility at default values
+    if w_star_guess is not None:
+        md.w_star_guess[:] = w_star_guess
+    else:
+        compute_recursive_utility(md)
 
     # Set up grid for param1 and param2
     x_vals = np.linspace(p1_min, p1_max, G) 
@@ -42,13 +48,14 @@ def stability_plot(ModelClass,
             # Create a new instance and take w_star_guess from
             # the last instance.  Set parameters.
             md_previous = md
-            md = ModelClass(build_grids=False)
+            md = ModelClass(build_grids=True)
             md.w_star_guess[:] = md_previous.w_star_guess
             md.__setattr__(param1, x)
             md.__setattr__(param2, y)
-            md.build_grid_and_shocks()
 
-            compute_recursive_utility(md)
+            if md.utility_params_differ(md_previous):
+                compute_recursive_utility(md)
+
             if one_step:
                 sr = md.compute_suped_spec_rad(n=1, num_reps=8000)
                 r = sr()
