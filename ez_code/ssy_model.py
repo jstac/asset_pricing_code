@@ -60,10 +60,10 @@ class SSY:
                  ϕ_d=4.54,
                  ρ_hd=0.969,
                  σ_hd=np.sqrt(0.0447),
-                 z_grid_size=8,
-                 h_z_grid_size=8,
-                 h_c_grid_size=8,
-                 h_d_grid_size=8,
+                 z_grid_size=16,
+                 h_z_grid_size=12,
+                 h_c_grid_size=12,
+                 h_d_grid_size=12,
                  mc_draw_size=4000,
                  build_grids=True):
 
@@ -267,7 +267,7 @@ class SSY:
                               h_z_0=0.0,
                               h_c_0=0.0,
                               h_d_0=0.0,
-                              n=1000, 
+                              n=1200, 
                               num_reps=12_000,
                               use_parallel_flag=True):
                          
