@@ -60,11 +60,11 @@ class SSY:
                  ϕ_d=4.54,
                  ρ_hd=0.969,
                  σ_hd=np.sqrt(0.0447),
-                 z_grid_size=16,
-                 h_z_grid_size=12,
-                 h_c_grid_size=12,
-                 h_d_grid_size=12,
-                 mc_draw_size=4000,
+                 z_grid_size=25,
+                 h_z_grid_size=10,
+                 h_c_grid_size=10,
+                 h_d_grid_size=10,
+                 mc_draw_size=6000,
                  build_grids=True):
 
 
@@ -170,10 +170,10 @@ class SSY:
 
 
     def build_grid_and_shocks(self, 
-                                ts_length=100_000, 
+                                ts_length=10_000_000, 
                                 seed=1234,
-                                q1=0.05,  # lower quantile
-                                q2=0.95): # upper quantile
+                                q1=0.025,  # lower quantile
+                                q2=0.925): # upper quantile
 
         paths = self.simulate_paths()
         z_vec, h_z_vec, h_c_vec, h_d_vec, g_c, g_d = paths
@@ -191,6 +191,7 @@ class SSY:
         self.h_d_grid = np.linspace(h_d_min, h_d_max, self.h_d_grid_size)
 
         # Shocks for Monte Carlo integration
+        np.random.seed(1234)
         self.shocks = randn(3, self.mc_draw_size)
 
 
@@ -267,7 +268,7 @@ class SSY:
                               h_z_0=0.0,
                               h_c_0=0.0,
                               h_d_0=0.0,
-                              n=1200, 
+                              n=1000, 
                               num_reps=12_000,
                               use_parallel_flag=True):
                          
