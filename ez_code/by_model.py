@@ -77,7 +77,7 @@ class BY:
         p1 = self.β, self.γ, self.ψ, \
                  self.μ_c, self.ρ, self.ϕ_z, \
                  self.v, self.d, self.ϕ_σ
-        p1 = other.β, other.γ, other.ψ, \
+        p2 = other.β, other.γ, other.ψ, \
                  other.μ_c, other.ρ, other.ϕ_z, \
                  other.v, other.d, other.ϕ_σ
         return not np.allclose(p1, p2)

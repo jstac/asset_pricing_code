@@ -7,7 +7,7 @@ Schorfheide--Song--Yaron code
 
 import numpy as np
 from numpy.random import randn
-from numpy import exp
+from numpy import exp, log
 from numba import jit, njit, prange
 from utils import quantile, lininterp_3d
 
@@ -60,11 +60,11 @@ class SSY:
                  ϕ_d=4.54,
                  ρ_hd=0.969,
                  σ_hd=np.sqrt(0.0447),
-                 z_grid_size=16,
-                 h_z_grid_size=12,
-                 h_c_grid_size=12,
-                 h_d_grid_size=12,
-                 mc_draw_size=4000,
+                 z_grid_size=14,
+                 h_z_grid_size=10,
+                 h_c_grid_size=10,
+                 h_d_grid_size=10,
+                 mc_draw_size=6000,
                  build_grids=True):
 
 
@@ -280,7 +280,6 @@ class SSY:
         h_z_grid = self.h_z_grid
         h_c_grid = self.h_c_grid
         h_d_grid = self.h_d_grid
-        shocks = self.shocks 
 
         # Useful constants
         τ_z = ϕ_z * σ_bar
@@ -295,8 +294,7 @@ class SSY:
             """
             Uses fact that
 
-                M_j = β**θ * exp(g_d_j - γ * g_c_j) * (w(x_j) / 
-                                (w(x_{j-1}) - 1)**(θ - 1)
+                M_j = β**θ * exp(g_d_j - γ * g_c_j) * (w(x_j) / (w(x_{j-1}) - 1)**(θ - 1)
 
             where w is the value function.
             """
@@ -308,17 +306,22 @@ class SSY:
                 np.random.seed(m)
 
                 # Reset accumulator and state to initial conditions
-                phi_prod = 1.0
-                z, h_z, h_c, h_d = z_0, h_z_0,  h_c_0, h_d_0
+                phi_sum = 1.0
+                z, h_z, h_c, h_d = z_0, h_z_0, h_c_0, h_d_0
 
                 # Calculate W_0
                 r = z, h_z, h_c
                 W = lininterp_3d(z_grid, h_z_grid, h_c_grid, w_star, r)
 
+                # We'll accumulate using 4 terms
+                a1 = 0.0
+                a2 = 0.0
+                a3 = 0.0
+                a4 = 0.0
+
                 for t in range(n):
-                    # Map h to σ (only h_z required at this step)
+                    # Update state 
                     σ_z = τ_z * exp(h_z)
-                    # Update state to t+1
                     z = ρ * z + κ * σ_z * randn()
                     h_z = ρ_hz * h_z + σ_hz * randn()
                     h_c = ρ_hc * h_c + σ_hc * randn()
@@ -326,22 +329,21 @@ class SSY:
                     # Map h to σ for the updated states
                     σ_c = τ_c * exp(h_c)
                     σ_d = τ_d * exp(h_d)
-                    # Calculate g^c_{t+1}
-                    g_c = μ_c + z + σ_c * randn()
-                    # Calculate g^d_{t+1}
-                    g_d = μ_d + α * z + δ * σ_c * randn() + σ_d * randn()
-                    # Calculate W_{t+1}
+                    # Calculate w_hat
                     r = z, h_z, h_c
                     W_next = lininterp_3d(z_grid, h_z_grid, h_c_grid, w_star, r)
-                    # Calculate M_{t+1} without β**θ 
-                    M = exp(g_d - γ * g_c) * (W_next / (W - 1))**(θ - 1)
-                    # Update phi_prod and store W_next for following step
-                    phi_prod = phi_prod * M 
+                    # Accumulate
+                    a1 += z
+                    a2 += σ_c * randn()
+                    a3 += σ_d * randn()
+                    a4 += log(W_next / (W - 1.0))
+                    # Update W
                     W = W_next
 
-                phi_obs[m] = phi_prod
+                total = (α - γ) * a1 + (δ - γ) * a2 + a3 + (θ - 1.0) * a4
+                phi_obs[m] = exp(total)
 
-            return β**θ * np.mean(phi_obs)**(1/n)
+            return β**θ * exp(μ_d - γ * μ_c) * np.mean(phi_obs)**(1/n)
 
         return compute_spec_rad
 
