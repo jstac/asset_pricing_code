@@ -15,9 +15,8 @@ with W_t iid and N(0, 1).  Preferences are CRRA.
 
 import numpy as np
 from numpy import sqrt, exp
-from scipy.stats import norm
-
-inv_sqrt_2pi = 1 / sqrt(2 * np.pi) 
+from numpy.random import randn
+from numba import njit, prange
 
 
 class MehraPrescott:
@@ -40,45 +39,63 @@ class MehraPrescott:
         self.smean = self.b / (1 - ρ)
 
 
-    def sim_state(self, x0=None, num_paths=1000, ts_length=1000):
-        """
-        Simulate the state process.  If x0 is None, then 
-        draw from the stationary distribution.
-
-        """
-        ρ, b, σ = self.ρ, self.b, self.σ
-        X = np.ones((num_paths, ts_length))
-        W = np.random.randn(num_paths, ts_length)
-
-        if x0 is None:
-            X[:, 0] = self.smean
-        else:
-            X[:, 0] = x0
-
-        for t in range(ts_length-1):
-            X[:, t+1] = ρ * X[:, t] + b + σ * W[:, t+1]
-        return X
 
         
-    def spec_rad_sim(self, num_paths=1000, ts_length=1000):
+def stability_exponent_mc_factory(mp, m=1000, n=1000, parallel_flag=True):
+    """
+    Compute the stability coefficient by Monte Carlo.
 
-        β, γ = self.β, self.γ
+    * mc is an instance of MehraPrescott
 
-        X = self.sim_state(num_paths=num_paths, ts_length=ts_length)
-        A = β * np.exp((1 - γ) * X)
+    Below, Y_j = exp((1 - γ) sum_{i=1}^n X_i^(j)) where j indexes one time
+    series path.
 
-        A = np.prod(A, axis=1)
-        return A.mean()**(1/ts_length)
+    The return value is 
+
+        ln β + (1/n) * ln (Y.mean())
+
+    """
+
+    ρ, b, σ = mp.ρ, mp.b, mp.σ
+    β, γ = mp.β, mp.γ
+
+    smean, ssd = mp.smean, mp.ssd
+
+    @njit(parallel=parallel_flag)
+    def stability_exponent_mc(m=1000, n=1000):
+
+        Y_sum = 0.0
+
+        for j in prange(m):
+            X_sum = 0.0
+            X = smean + ssd * randn()
+
+            for i in range(n):
+                X_sum += X
+                X = ρ * X + b + σ * randn()
+
+            Y_sum += np.exp((1 - γ) * X_sum)
+
+        Y_mean = Y_sum / m
+        return np.log(β) +  np.log(Y_mean) / n
+
+    return stability_exponent_mc
 
 
-    def spec_rad_analytic(self):
-        # Unpack parameters
-        β, γ, ρ, σ = self.β, self.γ, self.ρ, self.σ 
-        b = self.b
+def spec_rad_analytic(mp):
+    """
+    Compute spec rad by numerical linear algebra.
 
-        k1 = 1 - γ
-        s = k1 * b / (1 - ρ)
-        t = k1**2 * σ**2 /  (2 * (1 - ρ)**2)
-        return β * exp(s + t)
+    * mc is an instance of MehraPrescott
+
+    """
+    # Unpack parameters
+    β, γ, ρ, σ = mp.β, mp.γ, mp.ρ, mp.σ 
+    b = mp.b
+
+    k1 = 1 - γ
+    s = k1 * b / (1 - ρ)
+    t = k1**2 * σ**2 /  (2 * (1 - ρ)**2)
+    return β * exp(s + t)
 
 
