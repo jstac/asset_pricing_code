@@ -16,18 +16,18 @@ See table IV on page 1489 for parameter values.
 """
 
 import numpy as np
-from numpy import exp
+from numpy import exp, log
 from numpy.random import randn
 from numba import jit, njit, prange
 from utils import quantile, lininterp_2d
 
 class BY:
     def __init__(self, 
-                 β = 0.998,
-                 γ = 10.0,
-                 ψ = 1.5,
-                 μ_c = 0.0015,
-                 ρ = 0.979,
+                 β=0.998,
+                 γ=10.0,
+                 ψ=1.5,
+                 μ_c=0.0015,
+                 ρ=0.979,
                  ϕ_z=0.044,
                  v=0.987,
                  d=7.9092e-7,
@@ -179,12 +179,7 @@ class BY:
         return T
 
 
-    def compute_spec_rad_of_V(self, 
-                              z_0=None,
-                              σ_0=None,
-                              n=1000, 
-                              num_reps=10000,
-                              use_parallel_flag=True):
+    def stability_exponent_factory(self, parallel_flag=True):
                          
         # Unpack params and related objects
         β, γ, ψ, μ_c, ρ, ϕ_z, v, d, ϕ_σ, μ_d, α, ϕ_d = self.params()
@@ -194,13 +189,11 @@ class BY:
         shocks = self.shocks
         w_star = self.w_star_guess
 
-        if z_0 is None:
-            z_0 = 0.0
-        if σ_0 is None:
-            σ_0 = np.sqrt(self.d / (1 - self.v))
+        z_0 = 0.0
+        σ_0 = np.sqrt(self.d / (1 - self.v))
 
-        @njit(parallel=use_parallel_flag)
-        def compute_spec_rad(z_0=z_0, σ_0=σ_0):
+        @njit(parallel=parallel_flag)
+        def compute_stability_exponent(n=1000, num_reps=8000, seed=1234):
             """
             Uses fact that
 
@@ -211,10 +204,9 @@ class BY:
             """
             phi_obs = np.empty(num_reps)
 
-            for m in prange(num_reps):
+            np.random.seed(seed)
 
-                # Set seed
-                np.random.seed(m)
+            for m in prange(num_reps):
 
                 # Reset accumulator and state to initial conditions
                 phi_prod = 1.0
@@ -239,24 +231,8 @@ class BY:
 
                 phi_obs[m] = phi_prod
 
-            return β**θ * np.mean(phi_obs)**(1/n)
+            return θ * log(β) + (1/n) * log(np.mean(phi_obs))
 
-        return compute_spec_rad
+        return compute_stability_exponent
 
-    def compute_suped_spec_rad(self, n=1, num_reps=8000):
-
-        z_grid = self.z_grid
-        σ_grid = self.σ_grid
-        sr = self.compute_spec_rad_of_V(n=n, num_reps=num_reps, use_parallel_flag=False)
-
-        @njit
-        def compute_suped_spec_rad_jitted():
-            sup_val = -np.inf
-            for z in z_grid:
-                for σ in σ_grid:
-                    s = sr(z_0=z, σ_0=σ)
-                    sup_val = max(sup_val, s)
-            return sup_val
-
-        return compute_suped_spec_rad_jitted
 

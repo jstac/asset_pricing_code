@@ -14,8 +14,7 @@ def stability_plot(ModelClass,
                    ylabel=None,
                    w_star_guess=None,
                    coords=(-225, 30),     # relative location of text
-                   G=3,
-                   one_step=False):                  # grid size for x and y axes
+                   G=3):                  # grid size for x and y axes
 
     # Normalize unicode identifiers
     param1 = unicodedata.normalize('NFKC', param1)
@@ -56,21 +55,15 @@ def stability_plot(ModelClass,
             if md.utility_params_differ(md_previous):
                 compute_recursive_utility(md)
 
-            if one_step:
-                sr = md.compute_suped_spec_rad(n=1, num_reps=8000)
-                r = sr()
-            else:
-                sr = md.compute_spec_rad_of_V(n=1000, num_reps=8000)
-                r = sr()
-
-            R[i, j] = r
+            f = md.stability_exponent_factory(parallel_flag=False)
+            R[i, j] = f(n=1000, num_reps=8000)
 
     # Now the plot
     point_location=(param1_value, param2_value)
 
     fig, ax = plt.subplots(figsize=(10, 5.7))
     cs1 = ax.contourf(x_vals, y_vals, R.T, alpha=0.5)
-    ctr1 = ax.contour(x_vals, y_vals, R.T, levels=[1.0])
+    ctr1 = ax.contour(x_vals, y_vals, R.T, levels=[0.0])
 
     plt.clabel(ctr1, inline=1, fontsize=13)
     plt.colorbar(cs1, ax=ax, format="%.6f")
@@ -90,12 +83,8 @@ def stability_plot(ModelClass,
 
     ax.plot(*point_location,  "ko", alpha=0.6)
 
-    if one_step:
-        title = "One step contraction coefficient"
-    else:
-        title = "Spectral radius"
-
-    ax.set_title(title)
+    #title = ""
+    #ax.set_title(title)
 
     if xlabel is None:
         xlabel = param1
@@ -109,10 +98,7 @@ def stability_plot(ModelClass,
 
     model_type = ModelClass.__name__
 
-    if one_step:
-        filename = param1 + param2 + "model_type" + "_onestep_" + ".pdf"
-    else:
-        filename = param1 + param2 + "model_type" + "_" + ".pdf"
+    filename = param1 + param2 + "model_type" + "_" + ".pdf"
 
     plt.savefig("pdfs/" + filename)
     

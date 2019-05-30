@@ -263,14 +263,7 @@ class SSY:
         return T
 
 
-    def compute_spec_rad_of_V(self, 
-                              z_0=0.0,
-                              h_z_0=0.0,
-                              h_c_0=0.0,
-                              h_d_0=0.0,
-                              n=1000, 
-                              num_reps=12_000,
-                              use_parallel_flag=True):
+    def stability_exponent_factory(self, parallel_flag=True):
                          
         # Unpack params and related objects
         β, γ, ψ, μ_c, ρ, ϕ_z, σ_bar, ϕ_c, ρ_hz, σ_hz, ρ_hc, σ_hc, μ_d, α, δ, \
@@ -282,6 +275,12 @@ class SSY:
         h_c_grid = self.h_c_grid
         h_d_grid = self.h_d_grid
 
+        # Initial conditions
+        z_0 = 0.0
+        h_z_0 = 0.0
+        h_c_0 = 0.0
+        h_d_0 = 0.0
+
         # Useful constants
         τ_z = ϕ_z * σ_bar
         τ_c = ϕ_c * σ_bar
@@ -290,8 +289,8 @@ class SSY:
 
         w_star = self.w_star_guess
 
-        @njit(parallel=use_parallel_flag)
-        def compute_spec_rad(z_0=z_0, h_z_0=h_z_0, h_c_0=h_c_0, h_d_0=h_d_0): 
+        @njit(parallel=parallel_flag)
+        def compute_stability_exponent(n=1000, num_reps=10000, seed=1234): 
             """
             Uses fact that
 
@@ -301,10 +300,10 @@ class SSY:
             """
             phi_obs = np.empty(num_reps)
 
+            np.random.seed(seed)
+
             for m in prange(num_reps):
 
-                # Set seed
-                np.random.seed(m)
 
                 # Reset accumulator and state to initial conditions
                 phi_sum = 1.0
@@ -344,38 +343,7 @@ class SSY:
                 total = (α - γ) * a1 + (δ - γ) * a2 + a3 + (θ - 1.0) * a4
                 phi_obs[m] = exp(total)
 
-            return β**θ * exp(μ_d - γ * μ_c) * np.mean(phi_obs)**(1/n)
+            return θ * log(β) + μ_d - γ * μ_c + (1/n) * log(np.mean(phi_obs))
 
-        return compute_spec_rad
+        return compute_stability_exponent
 
-    def compute_suped_spec_rad(self, n=1, num_reps=8000):
-
-        z_grid = self.z_grid
-        h_z_grid = self.h_z_grid
-        h_c_grid = self.h_c_grid
-        h_d_grid = self.h_d_grid
-
-        nz = self.z_grid_size
-        nh_z = self.h_z_grid_size
-        nh_c = self.h_c_grid_size
-        nh_d = self.h_d_grid_size
-
-
-        sr = self.compute_spec_rad_of_V(n=n, num_reps=num_reps, use_parallel_flag=False)
-
-        @njit(parallel=True)
-        def compute_suped_spec_rad_jitted():
-            sup_val = -np.inf
-            for i in prange(nz):
-                z = z_grid[i]
-                for j in range(nh_z):
-                    h_z = h_z_grid[j]
-                    for k in range(nh_c):
-                        h_c = h_c_grid[k]
-                        for l in range(nh_d):
-                            h_d = h_d_grid[l]
-                            s = sr(z_0=z, h_z_0=h_z, h_c_0=h_c, h_d_0=h_d) 
-                            sup_val = max(sup_val, s)
-            return sup_val
-
-        return compute_suped_spec_rad_jitted
