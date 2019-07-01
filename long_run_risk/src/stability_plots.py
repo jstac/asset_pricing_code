@@ -100,7 +100,7 @@ def stability_plot(ModelClass,
 
     filename = param1 + param2 + "model_type" + "_" + ".pdf"
 
-    plt.savefig("pdfs/" + filename)
+    plt.savefig(filename)
     
     plt.show()
 
