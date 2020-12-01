@@ -29,7 +29,8 @@ class MehraPrescott:
                        phi=0.43,    
                        mu=0.018):   
 
-        self.beta, self.gamma, self.delta, self.phi, self.mu = beta, gamma, delta, phi, mu
+        self.beta, self.gamma, self.delta, self.phi, self.mu = \
+                beta, gamma, delta, phi, mu
 
 
 def stability_exponent(mp):
