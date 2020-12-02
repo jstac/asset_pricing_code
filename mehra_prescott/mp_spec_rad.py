@@ -8,7 +8,7 @@ from stability_plots import *
 mp_default = MehraPrescott()
 
 
-G = 6
+G = 40
 gamma_vals = np.linspace(1.01, 12, G)
 delta_vals = np.linspace(0.02, 0.1, G)
 
